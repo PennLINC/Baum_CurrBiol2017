@@ -25,7 +25,7 @@ require(lavaan)
 setwd("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/Network_measures")
 
 ## Load in csv with demographics and network measures
-LTN_n882_df <- read.csv("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/demog/LTN_n882_df_20170222.csv")
+LTN_n882_df <- read.csv("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/demog/LTN_n882_demog_netMeasures_20170306.csv")
 
 ## Define appropriate variables as factors/numerical values
 LTN_n882_df$Sex <- as.factor(LTN_n882_df$Sex)
@@ -39,18 +39,11 @@ LTN_n882_df$F4_Social_Cognition_Efficiency <- as.numeric(as.character(LTN_n882_d
 LTN_n882_df$ageSq_demeaned<-(LTN_n882_df$age_in_yrs-mean(LTN_n882_df$age_in_yrs))^2
 LTN_n882_df$ageCub_demeaned <-(LTN_n882_df$age_in_yrs-mean(LTN_n882_df$age_in_yrs))^3
 
-############################################
-### Read in Cognitive Measures Dataframe ###
-############################################
+###############################################################################################
+### Define cognitive measures dataframe after removing subjects with missing cognitive data ###
+###############################################################################################
 
-Cog_n880_df <- read.csv("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/demog/LTN_n880_Cog_df_20170222.csv")
-# Cog_n880_df <- read.csv("/data/joy/BBL/projects/pncBaumDti/Go1_cog_factorScores_LTN_DTI_n880.csv")
-Cog_n880_df$Sex <- as.factor(Cog_n880_df$Sex)
-Cog_n880_df$Race <- as.factor(Cog_n880_df$Race)
-Cog_n880_df$F1_Complex_Reasoning_Efficiency <- as.numeric(as.character(Cog_n880_df$F1_Complex_Reasoning_Efficiency))
-Cog_n880_df$F2_Memory_Efficiency <- as.numeric(as.character(Cog_n880_df$F2_Memory_Efficiency))
-Cog_n880_df$F3_Executive_Efficiency <- as.numeric(as.character(Cog_n880_df$F3_Executive_Efficiency))
-Cog_n880_df$F4_Social_Cognition_Efficiency <- as.numeric(as.character(Cog_n880_df$F4_Social_Cognition_Efficiency))
+Cog_n880_df <- LTN_n882_df[!is.na(LTN_n882_df$F3_Executive_Efficiency),]
 
 ################
 ### FIGURE 1 ###
@@ -59,44 +52,19 @@ hist(LTN_n882_df$age_in_yrs,col="gray")
 ExecEff_Age_gam <- gam(F3_Executive_Efficiency ~ s(age_in_yrs,k=4) + Sex, fx=TRUE, data = Cog_n880_df)
 visreg(ExecEff_Age_gam,"age_in_yrs",xlab="Age (years)", ylab="Executive Efficiency (Z)")
 
-## Calculate Partial r coefficient for Age effect
-covs <- cbind(Cog_n880_df$ageSq_demeaned,Cog_n880_df$Sex)
-pcor.test(Cog_n880_df$F3_Executive_Efficiency, Cog_n880_df$age_in_yrs, covs)
-
-## Read in network measures for developmental inferences
-FA_Total_Network_Strength_scale125 <- read.table("new_NetworkStrength_FA_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-colnames(FA_Total_Network_Strength_scale125) <- "FA_Total_Network_Strength_scale125"
-
-FA_GlobalEfficiency_scale125 <- read.table("new_FA_GlobalEfficiency_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-colnames(FA_GlobalEfficiency_scale125) <- "FA_GlobalEfficiency_scale125"
-
-FA_Yeo7system_wholebrain_partCoeff_scale125 <- read.table("Wholebrain_Avg_Participation_coeff_FA_Yeo7system_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-colnames(FA_Yeo7system_wholebrain_partCoeff_scale125) <- "FA_Yeo7system_wholebrain_partCoeff_scale125"
-
-LTN_n882_df <- cbind(LTN_n882_df, FA_Total_Network_Strength_scale125, FA_GlobalEfficiency_scale125, FA_Yeo7system_wholebrain_partCoeff_scale125)
-
 #######################################################################
 ### FIGURE 3: Age Effects on Yeo 7-system Participation Coefficient ###
 #######################################################################
 
 ## Figure 3a
 mean_Yeo7system_PC_gam <- gam(FA_Yeo7system_wholebrain_partCoeff_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
-visreg(mean_Yeo7system_PC_gam,"age_in_yrs", xlab="Age (years)", ylab="Mean Participation Coefficient")
+visreg(mean_Yeo7system_PC_gam,"age_in_yrs", xlab="Age (years)", ylab="Mean Participation Coefficient", ylim=c(0.76,0.79))
 
 ## Calculate Partial r coefficient for Age effect
 covs <- cbind(LTN_n882_df$ageSq_demeaned,LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
 pcor.test(LTN_n882_df$FA_Yeo7system_wholebrain_partCoeff_scale125, LTN_n882_df$age_in_yrs, covs)
 
-## Figure 3b: Read in Module-Specific Participation Coefficient Measures ###
-Module_Avg_Participation_coeff_FA_Yeo7system_scale125 <- read.csv("Module_Avg_Participation_coeff_FA_Yeo7system_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-Module_Avg_Participation_coeff_FA_Yeo7system_scale125 <- as.data.frame(Module_Avg_Participation_coeff_FA_Yeo7system_scale125)
-colnames(Module_Avg_Participation_coeff_FA_Yeo7system_scale125) <- c("Avg_FA_partCoeff_Yeo7system_Visual","Avg_FA_partCoeff_Yeo7system_Somatomotor","Avg_FA_partCoeff_Yeo7system_DorsalAttention","Avg_FA_partCoeff_Yeo7system_VentralAttention","Avg_FA_partCoeff_Yeo7system_Limbic","Avg_FA_partCoeff_Yeo7system_Frontoparietal","Avg_FA_partCoeff_Yeo7system_Default","Avg_FA_partCoeff_Yeo7system_Subcortical")
-
-
-## Merge module-specific segregation measures with dataframe
-LTN_n882_df <- cbind(LTN_n882_df, Module_Avg_Participation_coeff_FA_Yeo7system_scale125)
-
-## Run GAMs for Module-specific participation coefficient measures 
+## Run GAMs for Module-specific participation coefficient measures (Figure 3B)
 Visual_partCoeff_gam <- gam(Avg_FA_partCoeff_Yeo7system_Visual ~ FA_Total_Network_Strength_scale125 + s(age_in_yrs,k=4) + meanRELrms + Sex, fx=TRUE, data = LTN_n882_df)
 Visual_partCoeff_Age_pval <- summary(Visual_partCoeff_gam)$s.table[1,4]
 
@@ -127,6 +95,7 @@ Module_specific_Age_pvals <- c(Visual_partCoeff_Age_pval, Somatomotor_partCoeff_
 Module_specific_Age_Zscores <- qnorm(Module_specific_Age_pvals, lower.tail=FALSE)
 Module_specific_Age_Zscores <- as.data.frame(Module_specific_Age_Zscores)
 Module_specific_Age_Zscores$System_idx <- c(1:8)
+# Make dummy variable according to strength of Age effect (1=strongest,8=weakest)
 Module_specific_Age_Zscores$Effect <- c(8,1,5,3,6,4,2,7)
 
 ## Fig3B Barplot
@@ -136,7 +105,7 @@ Fig3B_ModSeg_Yeo7system_barplot + scale_x_continuous(breaks=1:8, labels=c("Somat
 ## Figure 3c -- Read in regional PC values for each subject
 Regional_FA_Yeo7system_participationCoefficient_scale125 <- read.csv("full_Participation_coeff_Yeo7system_FA_detWB_1mill_10_400mm_end2end_n882.txt",header=FALSE)
 
-# Cbind with dataframe containing Demographics
+# Merge with dataframe containing demographics and covariates
 full_FA_Yeo7system_participationCoefficient_scale125 <- cbind(Regional_FA_Yeo7system_participationCoefficient_scale125,LTN_n882_df)
 
 # Set categorical variables as factors
@@ -173,12 +142,6 @@ FDRcorr_NodeWise_YeoPC_GAM_Age_pvals  <- cbind(NodeWise_YeoPC_GAM_Age_pvals,FDRc
 ## Define subset of regions showing significant Age effects on Yeo PC
 sig_FDRcorr_NodeWise_YeoPC_GAM_Age_pvals <- FDRcorr_NodeWise_YeoPC_GAM_Age_pvals[which(FDRcorr_NodeWise_YeoPC_GAM_Age_pvals$FDRcorr_NodeWise_YeoPC_GAM_Age_pvals <.05),]
 
-## Write out regional Zscores for BrainNet Viewer renderings 
-# write.table(gam.MCLapply.NodeWise_partCoeff_Age_pvals$AgeEffect_Zscore,"/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/Neuron_Replication/Figures/Figure_3/Regional_FA_partCoeff_Yeo7system_Age_Zscores.txt",header=FALSE,row.names=FALSE,col.names=FALSE)
-
-## Write out index for Nodes with significant age effects 
-# write.table(sig_FDRcorr_gam.MCLapply.NodeWise_partCoeff_Age_pvals$Node_index,"/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/Neuron_Replication/Figures/Figure_3/FDR_sig_AgeEffect_node_INDEX.txt",header=FALSE,row.names=FALSE,col.names=FALSE)
-
 #################################################
 ### Edgewise GAM: Age effect on Edge Strength ###
 #################################################
@@ -187,9 +150,9 @@ sig_FDRcorr_NodeWise_YeoPC_GAM_Age_pvals <- FDRcorr_NodeWise_YeoPC_GAM_Age_pvals
 FA_EdgeStrength <- read.csv("new_EdgeVec_FA_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header = FALSE)
 FA_EdgeStrength <- as.data.frame(FA_EdgeStrength)
 
+# Merge demographics and edge strength data
 full_FA_EdgeStrength  <- cbind(FA_EdgeStrength, LTN_n882_df)
 full_FA_EdgeStrength$Sex <- as.factor(full_FA_EdgeStrength$Sex)
-full_FA_EdgeStrength$handedness <- as.factor(full_FA_EdgeStrength$handedness)
 
 ## Read in Within/Between module index 
 Yeo_7system_withinBetween_index <- read.table("Yeo_7system_Lausanne234_withinBetween_index.txt",header=FALSE)
@@ -218,7 +181,7 @@ EdgeStrength_GAM_Age_pvals$lm_Tvals <- lapply(full_FA_EdgeStrength[,1:27261],fun
 EdgeStrength_GAM_Age_pvals$Age_Zscore <- 0
 EdgeStrength_GAM_Age_pvals$Age_Zscore <- qnorm(EdgeStrength_GAM_Age_pvals$EdgeStrength_GAM_Age_pvals, lower.tail=FALSE)
 
-## Merge results with Edge betweenness centrality data
+## Merge results with Edge betweenness centrality data and within-module index
 EdgeStrength_GAM_Age_pvals <- cbind(EdgeStrength_GAM_Age_pvals,Yeo_7system_withinBetween_index, mean_subj_Normalized_edgeBetweenness)
 
 ## FDR Correction
@@ -226,11 +189,12 @@ FDRcorr_EdgeStrength_GAM_Age_pvals <- p.adjust(EdgeStrength_GAM_Age_pvals$EdgeSt
 FDRcorr_EdgeStrength_GAM_Age_pvals <- cbind(EdgeStrength_GAM_Age_pvals,FDRcorr_EdgeStrength_GAM_Age_pvals)
 
 ## Bonferonni correction
-Bonf_corr_MCLapply.EdgeStrength_Age_pvals <- p.adjust(EdgeStrength_GAM_Age_pvals$EdgeStrength_GAM_Age_pvals,method="bonferroni")
+BonfCorr_EdgeStrength_GAM_Age_pvals <- p.adjust(EdgeStrength_GAM_Age_pvals$EdgeStrength_GAM_Age_pvals,method="bonferroni")
 
-FDRcorr_EdgeStrength_GAM_Age_pvals <- cbind(FDRcorr_EdgeStrength_GAM_Age_pvals, Bonf_corr_MCLapply.EdgeStrength_Age_pvals)
+## Merge vectors of FDR and Bonferonni-corrected pvals
+FDRcorr_EdgeStrength_GAM_Age_pvals <- cbind(FDRcorr_EdgeStrength_GAM_Age_pvals, BonfCorr_EdgeStrength_GAM_Age_pvals)
 
-## Isolate edges with significant age effects
+## Identify edges with significant age effects
 sig_FDR_EdgeStrength_Age_pvals <- FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals <.05),]
 dim(sig_FDR_EdgeStrength_Age_pvals )
 
@@ -249,7 +213,7 @@ FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigPos_Index[which(FDRcorr_EdgeStrength_G
 
 ## Bonferroni sigPos Index (for BrainNet Renderings)
 FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index <- 0
-FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_corr_MCLapply.EdgeStrength_Age_pvals < 0.05 & FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals > 0)] <- 1
+FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$BonfCorr_EdgeStrength_GAM_Age_pvals < 0.05 & FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals > 0)] <- 1
 
 ### Define Hub Edges ###
 quantile(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness)
@@ -259,8 +223,6 @@ quantile(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness
 ########################################################################################
 FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index <- 0
 FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness >= 0.00722630)] <- 1
-
-# save.image("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/Neuron_Replication/ModDev_NeuronReplication_Workspace_08282016.RData")
 
 ## All Bonferonni-corrected hub edges that strengthen with age
 Bonf_sigPos_Norm_Hub_Edges_df <- as.data.frame(FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index==1 & FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index==1),]) 
@@ -282,126 +244,53 @@ dim(sigPos_Norm_between_Hub_Edges_df)
 ### FIGURE 4: Avg. Within-Module and Between-Module Connectivity ###
 ####################################################################
 
-## Read in Average Within-Module Connectivity
-FA_Yeo7system_Avg_Within_Module_connectivity_strength <- read.table("n882_FA_end2end_10_400mm_Avg_Within_conn.txt",header=FALSE)
-colnames(FA_Yeo7system_Avg_Within_Module_connectivity_strength) <- "FA_Yeo7system_Avg_Within_Module_connectivity_strength"
-
-## Read in Average Between-Module Connectivity
-FA_Yeo7system_Avg_Between_Module_connectivity_strength <- read.table("n882_FA_end2end_10_400mm_Avg_Between_conn.txt",header=FALSE)
-colnames(FA_Yeo7system_Avg_Between_Module_connectivity_strength) <- "FA_Yeo7system_Avg_Between_Module_connectivity_strength"
-
-## Merge with dataframe
-LTN_n882_df <- cbind(LTN_n882_df,FA_Yeo7system_Avg_Within_Module_connectivity_strength,FA_Yeo7system_Avg_Between_Module_connectivity_strength)
-
 ## Figure 4a
 Avg_Yeo_WithinMod_gam <- gam(FA_Yeo7system_Avg_Within_Module_connectivity_strength ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(Avg_Yeo_WithinMod_gam)$s.table[1,4]
 visreg(Avg_Yeo_WithinMod_gam,"age_in_yrs")
-
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned,LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
-pcor.test(LTN_n882_df$FA_Yeo7system_Avg_Within_Module_connectivity_strength, LTN_n882_df$age_in_yrs, covs)
 
 ## Figure 4b
 Avg_Yeo_BetweenMod_gam <- gam(FA_Yeo7system_Avg_Between_Module_connectivity_strength ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(Avg_Yeo_BetweenMod_gam)$s.table[1,4]
 visreg(Avg_Yeo_BetweenMod_gam,"age_in_yrs")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned,LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
-pcor.test(LTN_n882_df$FA_Yeo7system_Avg_Between_Module_connectivity_strength, LTN_n882_df$age_in_yrs, covs)
-
-
 #############################################
 ### FIGURE 5: Methodological Replications ###
 #############################################
-
-FA_Yeo7system_subject_Q_scale125 <- read.table("Yeo7system_FA_subject_Q_scale125_n882.txt",header=FALSE)
-colnames(FA_Yeo7system_subject_Q_scale125) <- "FA_Yeo7system_subject_Q_scale125"
-
-Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125 <- read.table("Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125_n882.txt",header=FALSE)
-colnames(Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125) <-"Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125"
-
-FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125 <- read.table("FA_end2end_10_400mm_SubjectLevel_Q_RastkoConsensus_gamma_2.5_LTN_n882.txt",header=FALSE) 
-colnames(FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125)<- "FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125"
-
-FA_Yeo7system_wholebrain_partCoeff_scale250 <- read.table("Wholebrain_Avg_Participation_coeff_FA_Yeo7system_detWB_1mill_10_400mm_end2end_scale250_n882.txt",header=FALSE)
-colnames(FA_Yeo7system_wholebrain_partCoeff_scale250) <- "FA_Yeo7system_wholebrain_partCoeff_scale250"
-
-rawSC_Yeo7system_wholebrain_partCoeff_scale125 <- read.table("New_Wholebrain_Avg_Participation_coeff_rawSC_Yeo7system_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-colnames(rawSC_Yeo7system_wholebrain_partCoeff_scale125)  <- "rawSC_Yeo7system_wholebrain_partCoeff_scale125"
-
-volNormSC_Yeo7system_wholebrain_partCoeff_scale125 <- read.table("Wholebrain_Avg_Participation_coeff_volNormSC_Yeo7system_detWB_1mill_10_400mm_end2end_scale125_n882.txt",header=FALSE)
-colnames(volNormSC_Yeo7system_wholebrain_partCoeff_scale125)  <- "volNormSC_Yeo7system_wholebrain_partCoeff_scale125"
-
-volNormSC_Avg_NodeStrength_scale125 <- read.table("avg_NodeStrength_volNormSC_detWB_1mill_10_400mm_end2end_n882.txt",header=FALSE)
-colnames(volNormSC_Avg_NodeStrength_scale125) <- "volNormSC_Avg_NodeStrength_scale125"
-
-rawSC_Total_NetworkStrength_scale125 <- read.table("rawSC_NetworkStrength_scale125_end2end_10_400mm_n882.txt",header=FALSE)
-colnames(rawSC_Total_NetworkStrength_scale125) <- "rawSC_Total_NetworkStrength_scale125"
-
-FA_Total_Network_Strength_scale250 <- read.table("FA_Total_Network_Strength_scale250_end2end_10_400mm_n882.txt",header=FALSE)
-colnames(FA_Total_Network_Strength_scale250) <- "FA_Total_Network_Strength_scale250"
-
-## Merge network measures with dataframe
-LTN_n882_df <- cbind(LTN_n882_df, FA_Yeo7system_subject_Q_scale125, Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125, FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125,FA_Yeo7system_wholebrain_partCoeff_scale250, rawSC_Yeo7system_wholebrain_partCoeff_scale125, volNormSC_Yeo7system_wholebrain_partCoeff_scale125, volNormSC_Avg_NodeStrength_scale125, rawSC_Total_NetworkStrength_scale125, FA_Total_Network_Strength_scale250)
-
 
 ## Figure 5a
 YeoQ_scale125_gam <- gam(FA_Yeo7system_subject_Q_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(YeoQ_scale125_gam)$s.table[1,4]
 visreg(YeoQ_scale125_gam,"age_in_yrs",xlab="Age (years)",ylab="Subject-specific Q Index")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned,LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
-pcor.test(LTN_n882_df$FA_Yeo7system_subject_Q_scale125, LTN_n882_df$age_in_yrs, covs)
-
 ## Figure 5b	
 StructPart_gamma2.5_wholebrain_PC_gam <- gam(Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(StructPart_gamma2.5_wholebrain_PC_gam)$s.table[1,4]
 visreg(StructPart_gamma2.5_wholebrain_PC_gam,"age_in_yrs", xlab="Age (years)",ylab="Mean PC - Group StructPart")
-
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
-pcor.test(LTN_n882_df$Wholebrain_Avg_Participation_coeff_FA_n882_StructPart_gamma_2.5_scale125, LTN_n882_df$age_in_yrs, covs)
 
 ## Figure 5c	
 StructPart_Rastko_subjectQ_gamma2.5_gam <- gam(FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(StructPart_Rastko_subjectQ_gamma2.5_gam)$s.table[1,4]
 visreg(StructPart_Rastko_subjectQ_gamma2.5_gam,"age_in_yrs",xlab="Age (years)",ylab="Group StructPart Q Index")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned,LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale125)
-pcor.test(LTN_n882_df$FA_SubjectLevel_Q_RastkoConsensus_gamma_2.5_scale125, LTN_n882_df$age_in_yrs, covs)
-
 ## Figure 5d
 FA_Yeo7system_meanPC_scale250_gam <- gam(FA_Yeo7system_wholebrain_partCoeff_scale250 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale250,fx=TRUE, data = LTN_n882_df)
 summary(FA_Yeo7system_meanPC_scale250_gam)$s.table[1,4]
 visreg(FA_Yeo7system_meanPC_scale250_gam,"age_in_yrs", xlab="Age (years)",ylab="Mean PC - Yeo 463-region")
-
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale250)
-pcor.test(LTN_n882_df$FA_Yeo7system_wholebrain_partCoeff_scale250, LTN_n882_df$age_in_yrs, covs)
 
 ## Figure 5e
 rawSC_Yeo7system_meanPC_scale125_gam <- gam(rawSC_Yeo7system_wholebrain_partCoeff_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + rawSC_Total_NetworkStrength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(rawSC_Yeo7system_meanPC_scale125_gam)$s.table[1,4]
 visreg(rawSC_Yeo7system_meanPC_scale125_gam,"age_in_yrs",xlab="Age (years)",ylab="Mean PC - Streamline Count")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$rawSC_Total_NetworkStrength_scale125)
-pcor.test(LTN_n882_df$rawSC_Yeo7system_wholebrain_partCoeff_scale125, LTN_n882_df$age_in_yrs, covs)
-
 ## Figure 5f
 volNormSC_Yeo7system_meanPC_scale125_gam <- gam(volNormSC_Yeo7system_wholebrain_partCoeff_scale125 ~ s(age_in_yrs,k=4) + meanRELrms + Sex + volNormSC_Avg_NodeStrength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(volNormSC_Yeo7system_meanPC_scale125_gam)$s.table[1,4]
 visreg(volNormSC_Yeo7system_meanPC_scale125_gam,"age_in_yrs",xlab="Age (years)",ylab="Mean PC - Streamline Density")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$volNormSC_Avg_NodeStrength_scale125)
-pcor.test(LTN_n882_df$rawSC_Yeo7system_wholebrain_partCoeff_scale125, LTN_n882_df$age_in_yrs, covs)
-
+##################################################
 ### Probabilistic Replication - Figure 5 (G-I) ###
+##################################################
 PTx_n878_df <- read.csv("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/demog/PTx_n878_ModDev_df_20170221.csv")
 
 ############################
@@ -422,16 +311,10 @@ plot(v1,xlab="Age (years)",ylab="Prob. Integrated Yeo PC - Streamline Count",cex
 plot(v2,xlab="Age (years)",ylab="Prob. Integrated Yeo PC - Streamline Density",cex.axis=1.3)
 plot(v3,xlab="Age (years)",ylab="Prob. Integrated Yeo PC - Connectivity Probability",cex.axis=1.3)
 
-# Age pvals for Yeo PartCoeff
+## Age pvals for Yeo PartCoeff
 Integrated_rawSC_YeoPC_agePval <- summary(gam(PTx_integrated_Araw_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125 ~ s(age_in_yrs,k=4) + Sex + meanRELrms,fx=TRUE, data = PTx_n878_df))$s.table[1,4]
 Integrated_volNorm_YeoPC_agePval <- summary(gam(PTx_integrated_AvolNorm_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125 ~ s(age_in_yrs,k=4) + Sex + meanRELrms,fx=TRUE, data = PTx_n878_df))$s.table[1,4]
 Integrated_Aprop_YeoPC_agePval <- summary(gam(PTx_integrated_Aprop_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125 ~ s(age_in_yrs,k=4) + Sex + meanRELrms,fx=TRUE, data = PTx_n878_df))$s.table[1,4]
-
-## Partial Correlations
-covs <- cbind(PTx_n878_df$ageSq_demeaned, PTx_n878_df$Sex, PTx_n878_df$meanRELrms)
-pcor.test(PTx_n878_df$PTx_integrated_Araw_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125, PTx_n878_df$age_in_yrs, covs)
-pcor.test(PTx_n878_df$PTx_integrated_AvolNorm_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125, PTx_n878_df$age_in_yrs, covs)
-pcor.test(PTx_n878_df$PTx_integrated_Aprop_Yeo_mean_PartCoeff_groupThresh_totalStrengthNorm_scale125, PTx_n878_df$age_in_yrs, covs)
 
 ## Reset graphical parameters for visualization
 par(mfrow=c(1,1))
@@ -445,36 +328,20 @@ FA_GlobalEfficiency_gam <- gam(FA_GlobalEfficiency_scale125 ~ s(age_in_yrs,k=4) 
 summary(FA_GlobalEfficiency_gam)
 visreg(FA_GlobalEfficiency_gam,"age_in_yrs",xlab="Age (years)",ylab="Global Efficiency")
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale250)
-pcor.test(LTN_n882_df$FA_GlobalEfficiency_scale125, LTN_n882_df$age_in_yrs, covs)
-
 ## Figer 6B: Global Efficiency over Modular Segregation
 FA_GlobalEff_ModSeg_gam <- gam(FA_GlobalEfficiency_scale125 ~ FA_Yeo7system_wholebrain_partCoeff_scale125 + s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(FA_GlobalEff_ModSeg_gam)
 visreg(FA_GlobalEff_ModSeg_gam,"FA_Yeo7system_wholebrain_partCoeff_scale125", xlim=c(0.75,0.79),xlab="Mean Participation Coefficient",ylab="Global Efficiency")
-
-## Partial Correlation
-covs <- cbind(LTN_n882_df$age_in_yrs, LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale250)
-pcor.test(LTN_n882_df$FA_GlobalEfficiency_scale125, LTN_n882_df$FA_Yeo7system_wholebrain_partCoeff_scale125, covs)
 
 # Fig 6E
 avg_Yeo7_within_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125  ~ new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df)
 summary(avg_Yeo7_within_EdgeStrength_gam)$p.table[2,4]
 visreg(avg_Yeo7_within_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, data =LTN_n882_df), "new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125", xlab="Avg Within-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
 
-## Partial Correlation
-covs <- cbind(LTN_n882_df$age_in_yrs, LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale250)
-pcor.test(LTN_n882_df$FA_GlobalEfficiency_scale125, LTN_n882_df$new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125, covs)
-
 ## Fig 6F 
 avg_Yeo7_between_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df)
 summary(avg_Yeo7_between_EdgeStrength_gam)$p.table[2,4]
 visreg(avg_Yeo7_between_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df), "new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125", xlab="Avg Between-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
-
-## Partial Correlation
-covs <- cbind(LTN_n882_df$age_in_yrs, LTN_n882_df$ageSq_demeaned, LTN_n882_df$Sex, LTN_n882_df$meanRELrms, LTN_n882_df$FA_Total_Network_Strength_scale250)
-pcor.test(LTN_n882_df$FA_GlobalEfficiency_scale125, LTN_n882_df$new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125, covs)
 
 ####################################
 ### FIGURE 7 - Cognitive Effects ###
@@ -520,13 +387,13 @@ Fig7A_ModSeg_Exec_barplot
 #############################################
 require(lavaan)
 
-Age_lm <- lm(age_in_yrs ~ Sex + meanRELrms + new_FA_end2end_10_400mm_Total_Network_Strength, data=Cog_n880_df)
+Age_lm <- lm(age_in_yrs ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 Age_resid <- resid(Age_lm)
 
-ExecEff_lm <- lm(F3_Executive_Efficiency ~ Sex + meanRELrms + new_FA_end2end_10_400mm_Total_Network_Strength, data=Cog_n880_df)
+ExecEff_lm <- lm(F3_Executive_Efficiency ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 ExecEff_resid <- resid(ExecEff_lm)
 
-ModSeg_lm <- lm(Yeo_7system_Avg_ParticipationCoeff_FA_end2end_10_400mm ~ Sex + meanRELrms + new_FA_end2end_10_400mm_Total_Network_Strength, data=Cog_n880_df)
+ModSeg_lm <- lm(Yeo_7system_Avg_ParticipationCoeff_FA_end2end_10_400mm ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 ModSeg_resid <- resid(ModSeg_lm)
 
 ## Standardize independent (X), dependent (Y), and mediating (M) variables
