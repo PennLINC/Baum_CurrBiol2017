@@ -15,9 +15,6 @@ require(visreg)
 require(parallel)
 require(multilevel)
 require(stats)
-require(stringr)
-require(multilevel)
-require(parallel)
 require(Formula)
 require(lavaan)
 
@@ -96,8 +93,7 @@ Module_specific_Age_Zscores <- qnorm(Module_specific_Age_pvals, lower.tail=FALSE
 Module_specific_Age_Zscores <- as.data.frame(Module_specific_Age_Zscores)
 Module_specific_Age_Zscores$System_idx <- c(1:8)
 # Make dummy variable according to strength of Age effect (1=strongest,8=weakest)
-Module_specific_Age_Zscores$Effect <- c(8,1,5,3,6,4,2,7)
-
+Module_specific_Age_Zscores$Effect <- base::rank(-Module_specific_Age_Zscores$Module_specific_Age_Zscores)
 ## Fig3B Barplot
 Fig3B_ModSeg_Yeo7system_barplot <- ggplot(data=Module_specific_Age_Zscores, aes(Effect, Module_specific_Age_Zscores)) + geom_bar(fill=c("dark blue","firebrick4","skyblue","orange","forestgreen","khaki1", "darkgray","purple"), col="black",stat="identity",position=position_dodge())
 Fig3B_ModSeg_Yeo7system_barplot + scale_x_continuous(breaks=1:8, labels=c("Somatomotor","Default","Ventral Attention","Frontoparietal","DorsalAttention","Limbic","Subcortical","Visual"))+ theme(axis.text = element_text(size= 14)) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border= element_rect(colour="black",fill=FALSE, size=1))
@@ -132,9 +128,10 @@ NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore <- 0
 NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore <- qnorm(NodeWise_YeoPC_GAM_Age_pvals$NodeWise_YeoPC_GAM_Age_pvals,lower.tail=FALSE)
 
 ## Set Z-score sign to positive/negative based on T-value ###
-NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore <- abs(NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore)
-NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore[which(NodeWise_YeoPC_GAM_Age_pvals$lm_Tvals < 0)] <- -(NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore)
+NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore[which(NodeWise_YeoPC_GAM_Age_pvals$lm_Tvals < 0)] <- -(NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore[which(NodeWise_YeoPC_GAM_Age_pvals$lm_Tvals < 0)])
 
+# NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore <- abs(NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore)
+# NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore[which(NodeWise_YeoPC_GAM_Age_pvals$lm_Tvals < 0)] <- -(NodeWise_YeoPC_GAM_Age_pvals$AgeEffect_Zscore)
 ## FDR correction
 FDRcorr_NodeWise_YeoPC_GAM_Age_pvals <- p.adjust(NodeWise_YeoPC_GAM_Age_pvals$NodeWise_YeoPC_GAM_Age_pvals,method="fdr")
 FDRcorr_NodeWise_YeoPC_GAM_Age_pvals  <- cbind(NodeWise_YeoPC_GAM_Age_pvals,FDRcorr_NodeWise_YeoPC_GAM_Age_pvals)
@@ -201,11 +198,11 @@ dim(sig_FDR_EdgeStrength_Age_pvals )
 No_Effect_EdgeStrength_Age_pvals <- FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals >= 0.05),]
 dim(No_Effect_EdgeStrength_Age_pvals)
 
-Positive_sig_FDR_EdgeStrength_Age_pvals <- sig_FDRcorr_EdgeStrength_GAM_Age_pvals[which(sig_FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals > 0),]
-dim(Positive_sig_FDRcorr_EdgeStrength_GAM_Age_pvals)
+Positive_sig_FDR_EdgeStrength_Age_pvals <- sig_FDR_EdgeStrength_Age_pvals[which(sig_FDR_EdgeStrength_Age_pvals $lm_Tvals > 0),]
+dim(Positive_sig_FDRcorr_EdgeStrength_Age_pvals)
 
-Negative_sig_FDR_EdgeStrength_Age_pvals <- sig_FDRcorr_EdgeStrength_GAM_Age_pvals[which(sig_FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals < 0),]
-dim(Negative_sig_FDRcorr_EdgeStrength_GAM_Age_pvals)
+Negative_sig_FDR_EdgeStrength_Age_pvals <- sig_FDR_EdgeStrength_Age_pvals[which(sig_FDR_EdgeStrength_Age_pvals$lm_Tvals < 0),]
+dim(Negative_sig_FDRcorr_EdgeStrength_Age_pvals)
 
 ## Define index for edges showing significant positive Age effects
 FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigPos_Index <- 0
@@ -215,14 +212,12 @@ FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigPos_Index[which(FDRcorr_EdgeStrength_G
 FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index <- 0
 FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$BonfCorr_EdgeStrength_GAM_Age_pvals < 0.05 & FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals > 0)] <- 1
 
-### Define Hub Edges ###
-quantile(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness)
-
 ########################################################################################
 ### Define Hub Edges based on top quartile of normalized Edge Betweenness Centrality ###
 ########################################################################################
+hubThreshold <- quantile(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness,.75)
 FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index <- 0
-FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness >= 0.00722630)] <- 1
+FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$mean_subj_Normalized_edgeBetweenness >= hubThreshold)] <- 1
 
 ## All Bonferonni-corrected hub edges that strengthen with age
 Bonf_sigPos_Norm_Hub_Edges_df <- as.data.frame(FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$Normalized_Hub_index==1 & FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index==1),]) 
@@ -336,40 +331,40 @@ visreg(FA_GlobalEff_ModSeg_gam,"FA_Yeo7system_wholebrain_partCoeff_scale125", xl
 # Fig 6E
 avg_Yeo7_within_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125  ~ new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df)
 summary(avg_Yeo7_within_EdgeStrength_gam)$p.table[2,4]
-visreg(avg_Yeo7_within_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, data =LTN_n882_df), "new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125", xlab="Avg Within-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
+visreg(avg_Yeo7_within_EdgeStrength_gam, "new_k4_Yeo7system_FA_Avg_sigAge_withinModule_edgeStrength_scale125", xlab="Avg Within-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
 
 ## Fig 6F 
 avg_Yeo7_between_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df)
 summary(avg_Yeo7_between_EdgeStrength_gam)$p.table[2,4]
-visreg(avg_Yeo7_between_EdgeStrength_gam <- gam(FA_GlobalEfficiency_scale125 ~ new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125 +  s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125, fx=TRUE, data = LTN_n882_df), "new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125", xlab="Avg Between-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
+visreg(avg_Yeo7_between_EdgeStrength_gam, "new_k4_Yeo7system_FA_Avg_sigAge_BetweenModule_edgeStrength_scale125", xlab="Avg Between-Module Connectivity",ylab="Global Efficiency", ylim=c(0.23,0.265))
 
 ####################################
 ### FIGURE 7 - Cognitive Effects ###
 ####################################
 
 ## System-specific Executive Effeciency effects on Avg PC
-Visual_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Visual ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+Visual_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Visual ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 Visual_Exec_pval <- summary(Visual_Exec_gam)$p.table[2,4]
 
-Somatomotor_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Somatomotor ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+Somatomotor_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Somatomotor ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 Somatomotor_Exec_pval <- summary(Somatomotor_Exec_gam)$p.table[2,4]
 
-DorsAtt_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_DorsalAttention ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+DorsAtt_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_DorsalAttention ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 DorsAtt_Exec_pval <- summary(DorsAtt_Exec_gam)$p.table[2,4]
 
-VentAtt_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_VentralAttention ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+VentAtt_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_VentralAttention ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 VentAtt_Exec_pval <- summary(VentAtt_Exec_gam)$p.table[2,4]
 
-Limbic_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Limbic ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+Limbic_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Limbic ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 Limbic_Exec_pval <- summary(Limbic_Exec_gam)$p.table[2,4]
 
-FP_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Frontoparietal ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+FP_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Frontoparietal ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 FP_Exec_pval <- summary(FP_Exec_gam)$p.table[2,4]
 
-DMN_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Default ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+DMN_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Default ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 DMN_Exec_pval <- summary(DMN_Exec_gam)$p.table[2,4]
 
-Subcortical_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Subcortical ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + new_FA_end2end_10_400mm_Total_Network_Strength + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
+Subcortical_Exec_gam <- gam(Avg_FA_partCoeff_Yeo7system_Subcortical ~ s(age_in_yrs,k=4) + F3_Executive_Efficiency + FA_Total_Network_Strength_scale125 + meanRELrms + Sex, fx=TRUE, data=Cog_n880_df)
 Subcortical_Exec_pval <- summary(Subcortical_Exec_gam)$p.table[2,4]
 
 ## Calculate Z-scores for Cognitive Effects
@@ -385,15 +380,15 @@ Fig7A_ModSeg_Exec_barplot
 #############################################
 ### Cognitive mediation analysis (Fig 7B) ###
 #############################################
-require(lavaan)
 
+## Regress covariates out
 Age_lm <- lm(age_in_yrs ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 Age_resid <- resid(Age_lm)
 
 ExecEff_lm <- lm(F3_Executive_Efficiency ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 ExecEff_resid <- resid(ExecEff_lm)
 
-ModSeg_lm <- lm(Yeo_7system_Avg_ParticipationCoeff_FA_end2end_10_400mm ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
+ModSeg_lm <- lm(FA_Yeo7system_wholebrain_partCoeff_scale125  ~ Sex + meanRELrms + FA_Total_Network_Strength_scale125, data=Cog_n880_df)
 ModSeg_resid <- resid(ModSeg_lm)
 
 ## Standardize independent (X), dependent (Y), and mediating (M) variables
