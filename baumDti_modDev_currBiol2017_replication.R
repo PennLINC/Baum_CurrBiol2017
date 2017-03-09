@@ -18,6 +18,7 @@ require(stats)
 require(Formula)
 require(lavaan)
 
+
 ## Set working directory 
 setwd("/data/joy/BBL/projects/pncBaumDti/Modular_Development_paper/CurrBiol_replication/Network_measures")
 
@@ -193,20 +194,24 @@ FDRcorr_EdgeStrength_GAM_Age_pvals <- cbind(FDRcorr_EdgeStrength_GAM_Age_pvals, 
 
 ## Identify edges with significant age effects
 sig_FDR_EdgeStrength_Age_pvals <- FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals <.05),]
-dim(sig_FDR_EdgeStrength_Age_pvals )
+dim(sig_FDR_EdgeStrength_Age_pvals)
 
 No_Effect_EdgeStrength_Age_pvals <- FDRcorr_EdgeStrength_GAM_Age_pvals[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals >= 0.05),]
 dim(No_Effect_EdgeStrength_Age_pvals)
 
-Positive_sig_FDR_EdgeStrength_Age_pvals <- sig_FDR_EdgeStrength_Age_pvals[which(sig_FDR_EdgeStrength_Age_pvals $lm_Tvals > 0),]
-dim(Positive_sig_FDRcorr_EdgeStrength_Age_pvals)
+Positive_sig_FDR_EdgeStrength_Age_pvals <- sig_FDR_EdgeStrength_Age_pvals[which(sig_FDR_EdgeStrength_Age_pvals$lm_Tvals > 0),]
+dim(Positive_sig_FDR_EdgeStrength_Age_pvals)
 
 Negative_sig_FDR_EdgeStrength_Age_pvals <- sig_FDR_EdgeStrength_Age_pvals[which(sig_FDR_EdgeStrength_Age_pvals$lm_Tvals < 0),]
-dim(Negative_sig_FDRcorr_EdgeStrength_Age_pvals)
+dim(Negative_sig_FDR_EdgeStrength_Age_pvals)
 
 ## Define index for edges showing significant positive Age effects
 FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigPos_Index <- 0
 FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigPos_Index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals < 0.05 & FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals > 0)] <- 1
+
+## Define index for edges showing significant positive Age effects
+FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigNeg_Index <- 0
+FDRcorr_EdgeStrength_GAM_Age_pvals$FDR_sigNeg_Index[which(FDRcorr_EdgeStrength_GAM_Age_pvals$FDRcorr_EdgeStrength_GAM_Age_pvals < 0.05 & FDRcorr_EdgeStrength_GAM_Age_pvals$lm_Tvals < 0)] <- 1
 
 ## Bonferroni sigPos Index (for BrainNet Renderings)
 FDRcorr_EdgeStrength_GAM_Age_pvals$Bonf_sigPos_Index <- 0
@@ -239,15 +244,52 @@ dim(sigPos_Norm_between_Hub_Edges_df)
 ### FIGURE 4: Avg. Within-Module and Between-Module Connectivity ###
 ####################################################################
 
-## Figure 4a
+## Figure 4A
 Avg_Yeo_WithinMod_gam <- gam(FA_Yeo7system_Avg_Within_Module_connectivity_strength ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(Avg_Yeo_WithinMod_gam)$s.table[1,4]
 visreg(Avg_Yeo_WithinMod_gam,"age_in_yrs")
 
-## Figure 4b
+## Figure 4B
 Avg_Yeo_BetweenMod_gam <- gam(FA_Yeo7system_Avg_Between_Module_connectivity_strength ~ s(age_in_yrs,k=4) + meanRELrms + Sex + FA_Total_Network_Strength_scale125,fx=TRUE, data = LTN_n882_df)
 summary(Avg_Yeo_BetweenMod_gam)$s.table[1,4]
 visreg(Avg_Yeo_BetweenMod_gam,"age_in_yrs")
+
+## Figure 4D
+
+# Subset non-zero edges
+nzEdges_df <- FDRcorr_EdgeStrength_GAM_Age_pvals[!is.na(FDRcorr_EdgeStrength_GAM_Age_pvals$EdgeStrength_GAM_Age_pvals),]
+
+## Within- and Between-Module edges that Strengthen with Age
+sigPos_within <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==0 & nzEdges_df$FDR_sigPos_Index==1),]))
+tot_within <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==0),]))
+perc_strengthen_within <- as.numeric(sigPos_within / tot_within) * 100)
+
+sigPos_between <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==1 & nzEdges_df$FDR_sigPos_Index==1),]))
+tot_between <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==1),]))
+perc_strengthen_between <- as.numeric((sigPos_between / tot_between) * 100)
+
+## Within- and Between-Module edges that Weaken with Age
+sigNeg_within <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==0 & nzEdges_df$FDR_sigNeg_Index==1),]))
+tot_within <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==0),]))
+perc_weaken_within <- as.numeric((sigNeg_within / tot_within) * 100)
+
+sigNeg_between <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==1 & nzEdges_df$FDR_sigNeg_Index==1),]))
+tot_between <- as.numeric(nrow(nzEdges_df[which(nzEdges_df$Yeo_7system_withinBetween_index==1),]))
+perc_weaken_between <- as.numeric((sigNeg_between / tot_between) * 100)
+
+## Create dataframe with percentages of edges that significantly strengthen or weaken with age
+ageEffect <- c("Strengthen", "Strengthen", "Weaken", "Weaken")
+withinBetween <- c("Within", "Between", "Within", "Between")
+percent_edges <- c(perc_strengthen_within, perc_strengthen_between, perc_weaken_within, perc_weaken_between)
+Fig4D_df <- as.data.frame(cbind(ageEffect,withinBetween,percent_edges))
+
+## Reorder factors for plotting
+Fig4D_df$withinBetween  <- factor(Fig4D_df$withinBetween, levels = rev(levels(Fig4D_df$withinBetween)))
+Fig4D_df$percent_edges <- as.numeric(as.character(Fig4D_df$percent_edges))
+
+## Create barplot for Figure 4D
+percSigEdges_Yeo7system_plot <- ggplot(data=Fig4D_df, aes(ageEffect,as.numeric(percent_edges),fill=withinBetween)) + geom_bar(stat="identity",position=position_dodge())
+percSigEdges_Yeo7system_plot + theme(axis.text = element_text(size= 14)) + scale_fill_brewer(palette = "Set1") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border= element_rect(colour="black",fill=FALSE, size=1))
 
 #############################################
 ### FIGURE 5: Methodological Replications ###
