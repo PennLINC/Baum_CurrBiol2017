@@ -1,20 +1,19 @@
 function GB_glconsensus(adjmatpath,outpath,varargin)
 
 % fprintf('1')
-% GLCONSENSUS Consensus community detection using the Louvain-like
+% GB_GLCONSENSUS Consensus community detection using the Louvain-like
 % modularity-maximisation procedure, as implemented in genlouvain.m
 %
-% glconsensus reads in a path to either:
+% GB_glconsensus reads in a path to either:
 %   (1) a square symmetric adjacency matrix
 %   (2) an array containing timeseries of edges in columns
 %
-% glconsensus repeats genlouvain-based clustering nreps times per agreement
-% cycle and uses consensus_iterative.m to obtain a consensus partition
+% GB_glconsensus repeats genlouvain-based clustering nreps times per agreement
+% cycle until convergence. The resultant partition is defined as the consensus partition
 %
 %
 % REQUIRES: 
 % genlouvain.m (http://netwiki.amath.unc.edu/GenLouvain/GenLouvain) 
-% consensus_iterative.m (http://commdetect.weebly.com/)
 
 % Define defaults
 nreps = 100;
@@ -22,10 +21,6 @@ gamma = 1;
 omega = 0;
 consensus = 0;
 T=1;
-
-% Read in the adjacency matrix or edge timeseries
-
-% A = importdata(adjmatpath);
 
 % Print output path
 outpath
@@ -35,7 +30,6 @@ adjmatpath
 
 load(adjmatpath);
 A = connectivity;
-
 
 % Set the number of repetitions
 for i=1:2:length(varargin)
@@ -61,7 +55,6 @@ adjmat = A;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Original Rastko Consensus Approach %%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 preagreement = zeros(N,nreps);
 for r = 1:nreps
         % Prepare a pre-agreement matrix
@@ -85,7 +78,10 @@ for r = 1:nreps
         preagreement(:,r) = S;
     end
 
-% Continue until there is a consensus
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Repeat modularity maximization until the agreement matrix becomes binary (convergence) %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 while consensus ~= 1
     % Iterate for nreps
     preagreement = zeros(N,T,nreps);
@@ -119,36 +115,13 @@ while consensus ~= 1
     end
     agreement = mean(agreement,4);
     A = agreement;
+
     % Determine whether consensus has been reached: if it has, the
     % sampled solution space will be deterministic, so only binary values
     % will exist in the agreement matrix
     if isempty(setdiff(unique(agreement),[0,1]))
         consensus = 1;
     end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Generate a null model of community assignments via
-    % permutation. This null model provides the expected weights
-    % of edges in the agreement matrix.
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    preagreement_null = preagreement;
-    agreement_null = zeros(N,N,T,nreps);
-    for r = 1:nreps
-        permorder = randperm(N);
-        preagreement_null(:,:,r) = preagreement_null(permorder,:,r);
-        for s=1:T
-            agreement_null(:,:,s,r) = bsxfun(@eq,preagreement_null(:,s,r),preagreement_null(:,s,r)');
-        end
-    end
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % This null model effectively results in a constant expected
-    % weight for all edges; it is independent of "degree" (mean
-    % community size of a node).
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    P = mean(agreement_null,4);
-    pcon = max(squareform(P - diag(diag(P))));
-    P = repmat(pcon,size(P));
 
 end
 
