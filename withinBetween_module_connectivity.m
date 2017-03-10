@@ -1,3 +1,5 @@
+function withinBetween_module_connectivity(adjmatpath,commPath)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % adjmatpath = path to subject adjacency matrix    %
 % commPath = path to commmunity affiliation vector %
@@ -14,6 +16,7 @@ A = connectivity;
 %%% Calculate Avg. Within and Between-module connectivity %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Define index for within-module and between-module connections
 withinBetween_mat=zeros(length(Ci));
 numComms=numel(unique(Ci));
 withinBetween_mat=~bsxfun(@eq,Ci,Ci');
