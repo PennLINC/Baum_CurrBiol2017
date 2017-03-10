@@ -1,4 +1,4 @@
-function GLB_glconsensus(adjmatpath,outpath,varargin)
+function GB_glconsensus(adjmatpath,outpath,varargin)
 
 % fprintf('1')
 % GLCONSENSUS Consensus community detection using the Louvain-like
